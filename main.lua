@@ -91,8 +91,8 @@ function love.load()
 
     -- initialize our player paddles; make them global so that they can be
     -- detected by other functions and modules
-    player1 = Paddle(10, 30, 5, 20)
-    player2 = Paddle(VIRTUAL_WIDTH - 10, VIRTUAL_HEIGHT - 30, 5, 20)
+    player1 = Paddle(10, 30, 5, 30)
+    player2 = Paddle(VIRTUAL_WIDTH - 10, VIRTUAL_HEIGHT - 30, 5, 30)
 
     -- place a ball in the middle of the screen
     ball = Ball(VIRTUAL_WIDTH / 2 - 2, VIRTUAL_HEIGHT / 2 - 2, 4, 4)
@@ -115,6 +115,7 @@ function love.load()
     -- 3. 'play' (the ball is in play, bouncing between paddles)
     -- 4. 'done' (the game is over, with a victor, ready for restart)
     gameState = 'start'
+    cpuOn = true 
 end
 
 --[[
@@ -237,14 +238,26 @@ function love.update(dt)
         player1.dy = 0
     end
 
+    -- IF Manual Control State:
     -- player 2
-    if love.keyboard.isDown('up') then
-        player2.dy = -PADDLE_SPEED
-    elseif love.keyboard.isDown('down') then
-        player2.dy = PADDLE_SPEED
-    else
-        player2.dy = 0
-    end
+    if not cpuOn then 
+        if love.keyboard.isDown('up') then
+            player2.dy = -PADDLE_SPEED
+        elseif love.keyboard.isDown('down') then
+            player2.dy = PADDLE_SPEED
+        else
+            player2.dy = 0
+        end
+    else 
+        player2.y = ball.y
+    end 
+
+    -- if cpuOn then
+    --     player2.dy = ball.dy
+    -- end 
+    -- IF PERFECT AI State: 
+    -- Update y axis to track bally (start with original bally)
+
 
     -- update our ball based on its DX and DY only if we're in play state;
     -- scale the velocity by dt so movement is framerate-independent
@@ -269,6 +282,8 @@ function love.keypressed(key)
         love.event.quit()
     -- if we press enter during either the start or serve phase, it should
     -- transition to the next appropriate state
+    elseif key == 'c' then
+        cpuOn = not cpuOn
     elseif key == 'enter' or key == 'return' then
         if gameState == 'start' then
             gameState = 'serve'
@@ -303,7 +318,7 @@ function love.draw()
     -- begin drawing with push, in our virtual resolution
     push:start()
 
-    love.graphics.clear(40, 45, 52, 255)
+    love.graphics.clear(40/255, 45/255, 52/255, 255/255)
     
     -- render different things depending on which part of the game we're in
     if gameState == 'start' then
@@ -311,6 +326,7 @@ function love.draw()
         love.graphics.setFont(smallFont)
         love.graphics.printf('Welcome to Pong!', 0, 10, VIRTUAL_WIDTH, 'center')
         love.graphics.printf('Press Enter to begin!', 0, 20, VIRTUAL_WIDTH, 'center')
+        love.graphics.printf("Or press C to toggle CPU play...", 0, 30, VIRTUAL_WIDTH, 'center')
     elseif gameState == 'serve' then
         -- UI messages
         love.graphics.setFont(smallFont)
@@ -337,7 +353,7 @@ function love.draw()
 
     -- display FPS for debugging; simply comment out to remove
     displayFPS()
-
+    displayCpuStatus()
     -- end our drawing to push
     push:finish()
 end
@@ -352,6 +368,14 @@ function displayScore()
         VIRTUAL_HEIGHT / 3)
     love.graphics.print(tostring(player2Score), VIRTUAL_WIDTH / 2 + 30,
         VIRTUAL_HEIGHT / 3)
+end
+
+function displayCpuStatus() 
+    -- toggle status display 
+    love.graphics.setFont(smallFont)
+    love.graphics.setColor(0, 255, 0, 255)
+    love.graphics.print('P2 CPU: ' .. tostring(cpuOn), 10, 20)
+    love.graphics.setColor(255, 255, 255, 255)
 end
 
 --[[
